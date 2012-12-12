@@ -6,7 +6,8 @@ use React\Async\Util as Async;
 ///Users/evan.frolich/Sites/react/CGParty/
 $WATCHED_DIR = 'media';
 $METADATA_DIR = 'metadata';
-$PUSH_TIMER = 3; //seconds
+$PUSH_TIMER = 3; //Time to push new media over the socket in seconds
+$WATCH_DIR_TIMER = 10; //How often to check the WATCHED_DIR for changes in seconds
 $RANDOM_WEIGHT = 20;
 
 $file_list = array();
@@ -66,7 +67,7 @@ function createMediaTable()
 }
 
 /* watch the dir for new images */
-$loop->addPeriodicTimer(10, function() {
+$loop->addPeriodicTimer($WATCH_DIR_TIMER, function() {
 		mapDirContentsToDB();
 });
 
