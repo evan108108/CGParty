@@ -8,7 +8,7 @@ $WATCHED_DIR = 'media';
 $METADATA_DIR = 'metadata';
 $PUSH_TIMER = 3; //Time to push new media over the socket in seconds
 $WATCH_DIR_TIMER = 10; //How often to check the WATCHED_DIR for changes in seconds
-$RANDOM_WEIGHT = 20;
+$RANDOM_WEIGHT = 20; //The higher the number the more random. This number must be the same size or smaller then the total number of images
 
 $file_list = array();
 
