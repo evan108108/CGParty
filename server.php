@@ -35,9 +35,10 @@ function getMedia()
 {
 	global $db;
 	global $RANDOM_WEIGHT;
-	$results = $db->query('SELECT * FROM media ORDER BY number_of_views ASC, crt_dtm DESC LIMIT 20');
+
+	$results = $db->query("SELECT * FROM media ORDER BY number_of_views ASC, crt_dtm DESC LIMIT $RANDOM_WEIGHT");
 	$random = rand(0, $RANDOM_WEIGHT);
-	$cnt = 21;
+	$cnt = $RANDOM_WEIGHT + 1;
 	foreach($results as $result)
 	{
 		$cnt--;
