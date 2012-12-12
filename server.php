@@ -6,6 +6,8 @@ use React\Async\Util as Async;
 ///Users/evan.frolich/Sites/react/CGParty/
 $WATCHED_DIR = 'media';
 $METADATA_DIR = 'metadata';
+$PUSH_TIMER = 3; //seconds
+$RANDOM_WEIGHT = 20;
 
 $file_list = array();
 
@@ -18,9 +20,9 @@ $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 createMediaTable();
 mapDirContentsToDB();
 
-$socket->on('connection', function ($conn) use ($loop){
+$socket->on('connection', function ($conn) use ($loop, $PUSH_TIMER){
 	//$conn->pipe($conn);
-	$loop->addPeriodicTimer(3, function() use ($conn) {
+	$loop->addPeriodicTimer($PUSH_TIMER, function() use ($conn) {
 		$conn->write(getMedia());
 	});
 		
@@ -31,14 +33,14 @@ $socket->on('connection', function ($conn) use ($loop){
 function getMedia()
 {
 	global $db;
+	global $RANDOM_WEIGHT;
 	$results = $db->query('SELECT * FROM media ORDER BY number_of_views ASC, crt_dtm DESC LIMIT 20');
-	$random = rand(0, 20);
+	$random = rand(0, $RANDOM_WEIGHT);
 	$cnt = 21;
 	foreach($results as $result)
 	{
 		$cnt--;
 		if($cnt != $random) continue;
-		//$result = $results[rand(0, (count($results)-1))];
 		$result['contents'] = json_decode($result['contents'], true);
 		return json_encode($result);
 	}
