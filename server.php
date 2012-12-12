@@ -1,6 +1,8 @@
 <?php
 require 'vendor/autoload.php';
 
+ date_default_timezone_set('UTC');
+
 use React\Async\Util as Async;
 
 ///Users/evan.frolich/Sites/react/CGParty/
@@ -16,7 +18,7 @@ $loop = React\EventLoop\Factory::create();
 $socket = new React\Socket\Server($loop);
 
 $db = new PDO('sqlite::memory:');
-$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
 
 createMediaTable();
 mapDirContentsToDB();
@@ -56,22 +58,13 @@ function updateMediaViews($result)
 	global $db;
 
 	$result = json_decode($result, true);
-	$update = "UPDATE `media` SET views = " . ($result['number_of_views'] + 1) . " WHERE id = " . $result['id'];
-	//$db->beginTransaction();
+	$update = "UPDATE `media` SET number_of_views = '" . ($result['number_of_views'] + 1) . "' WHERE id = '" . $result['id'] . "'";
+
+	$db->beginTransaction();
 	$db->exec($update);
-		//$myUpdate->exec();
-	//$db->commit();
+	$db->commit();
 
-
-
-	//print_r($myresult);
 	return true;
-	//$insert = "INSERT INTO media (name, number_of_views, type, text, contents, lud_dtm, crt_dtm) VALUES ('dude', 0, 'file', 'yes!', '', " . time() . ", " . time() . ")";
-	//$stmt = $db->prepare($insert);
-	//$stmt->execute();
-	//echo "\n$update\n";
-	//$db->prepare($update);
-	//$db->execute();
 }
 
 
