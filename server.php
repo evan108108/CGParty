@@ -6,6 +6,7 @@ date_default_timezone_set('UTC'); //Set the default timezone to UTC
 //use React\Async\Util as Async;
 
 ///Users/evan.frolich/Sites/react/CGParty/
+$SOCKET_PORT = 4000;
 $WATCHED_DIR = 'media';
 $METADATA_DIR = 'metadata';
 $PUSH_TIMER = 3; //Time to push new media over the socket in seconds
@@ -43,7 +44,7 @@ $loop->addPeriodicTimer($WATCH_DIR_TIMER, function() {
 echo "Socket server listening on port 4000.\n";
 echo "You can connect to it by running: telnet localhost 4000\n";
 
-$socket->listen(4000); //Start the socket lisining on port 400
+$socket->listen($SOCKET_PORT); //Start the socket lisining on port 400
 $loop->run(); //Start the event loop
 
 
