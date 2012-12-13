@@ -80,5 +80,5 @@ while(TRUE){
  }
 
  // Sleep for 1 second
- sleep(1);
+ sleep(5);
 }
