@@ -133,7 +133,7 @@ function mapDirContentsToDB()
 				while(false !== ($subfile = readdir($dirHandle)))
 				{
 					if($subfile !== '.' && $subfile !== '..' && $subfile != '.DS_Store')
-						$fileList[] = addslashes($subfile);
+						$fileList[] = sqlite_escape_string($subfile);
 				}
 				$contents = json_encode($fileList);
 			}
@@ -148,7 +148,7 @@ function mapDirContentsToDB()
 			else $text = "";
 			
 			//Insert media item in media table
-			$insert = "INSERT INTO media (name, number_of_views, type, text, contents, lud_dtm, crt_dtm) VALUES ('" . addslashes($file) . "', 0, '$type', '" . addslashes($text) . "', '$contents', " . time() . ", " . time() . ")";
+			$insert = "INSERT INTO media (name, number_of_views, type, text, contents, lud_dtm, crt_dtm) VALUES ('" . sqlite_escape_string($file) . "', 0, '$type', '" . sqlite_escape_string($text) . "', '$contents', " . time() . ", " . time() . ")";
 			$stmt = $db->prepare($insert);
 			$stmt->execute();
 			$file_list[$file] = true;
