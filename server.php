@@ -133,7 +133,7 @@ function mapDirContentsToDB()
 				while(false !== ($subfile = readdir($dirHandle)))
 				{
 					if($subfile !== '.' && $subfile !== '..' && $subfile != '.DS_Store')
-						$fileList[] = $subfile;
+						$fileList[] = addslashes($subfile);
 				}
 				$contents = json_encode($fileList);
 			}
