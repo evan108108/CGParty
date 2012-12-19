@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   backgroundColor="#000000"
+					   showStatusBar="false"
+					   applicationComplete="onApplicationComplete(event);"
+					   invoke="onInvoke(event);"
+					   enterFrame="enterFrameHandler(event)" xmlns:local="*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@namespace local "*";
+		
+		@font-face {
+			src:url("assets/fonts/HFJ_Verlag/OpenType/Verlag-Black.otf");
+			fontFamily: Verlag;
+			advancedAntiAliasing: true;
+		}
+		
+		@font-face {
+			src:url("assets/fonts/TGB.TTF");
+			fontFamily: TradeGothic;
+			advancedAntiAliasing: true;
+		}
+		
+		mx|Image {
+			brokenImageSkin: Embed("/assets/images/CG_Circle.png");
+			borderSize: 0
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.core.Application;
+			import mx.effects.AnimateProperty;
+			import mx.effects.Parallel;
+			import mx.events.EffectEvent;
+			import mx.events.FlexEvent;
+			
+			private static const socketUrl:String = "localhost";
+			private static const socketPort:int = 4000;
+			private var dataController:DataController = new DataController();
+			
+			public var mainTimer:Timer = new Timer(4000);
+			private var forcedTimer:Timer = new Timer(4000);
+			private var isFirstImage:Boolean = true;
+			private var currIdx:int = 0;
+			private var animationDuration:int = 600;
+			
+			public var nextMessage:String = "";
+			
+			private function onApplicationComplete(event:FlexEvent):void
+			{
+				trace('[onApplicationComplete]');
+			}
+			
+			private function onInvoke(event:InvokeEvent):void
+			{
+				trace('[onInvoke]');
+				toggleFullScreen();
+				stage.scaleMode = StageScaleMode.NO_SCALE;
+				stage.align = StageAlign.TOP_LEFT;
+				
+				this.parts(true);
+			
+			}
+			
+			private function toggleFullScreen():void
+			{
+				trace('[toggleFullScreen]');
+				stage.displayState = ( stage.displayState == StageDisplayState.FULL_SCREEN_INTERACTIVE ) ?
+					StageDisplayState.NORMAL :
+					StageDisplayState.FULL_SCREEN_INTERACTIVE;
+			}
+			
+			private function parts(goodTouch:Boolean):void
+			{
+				trace('[App:parts] goodTouch = '+goodTouch);
+				dataController.connect(socketUrl, socketPort);
+				mainTimer.addEventListener(TimerEvent.TIMER, onCycleImage, false, 0, true);
+				mainTimer.start();
+				
+			}
+			
+			private function onCycleImage(event:TimerEvent):void
+			{
+				trace('[App:onCycleImage]');
+				
+				if(this.dataController.incomingDataBuff.length < 2) return;
+				
+				// if file
+					// if video
+				
+				// if folder
+					// if video
+				
+				if(isFirstImage) {
+					isFirstImage = false;
+					// do first image transition
+					doFirstImageTransition();
+					return;
+				}
+				
+				// pause the timer
+				mainTimer.stop();
+			
+				doTransitionA();
+			}
+			
+			
+			protected function loadFile(filename:String):void
+			{
+				try {
+					/*
+					Create a File object which 'points' to a file called test.txt in the
+					applicationStorageDirectory for this AIR app.
+					*/
+					//var localFile:File = File.applicationStorageDirectory.resolvePath(filename);
+					var localFile:File = new File(filename);
+					
+					/*
+					Create a FileStream object which we will use to read/write content to/from
+					a File object.
+					*/
+					var localFileStream:FileStream = new FileStream();
+					
+					/*
+					Now ask the FileStream to open a File object. The FileMode.READ will open
+					the file for reading.
+					*/
+					localFileStream.open(localFile, FileMode.READ);
+					
+					/*
+					Create a String variable to hold the contents of the file.
+					*/
+					var fileContents:String;
+					
+					/*
+					Call the readMultiByte function on the FileStream object which will return a String
+					containing the file contents. The bytesAvailable property on the FileStream object
+					stores the number of bytes available to read and the string "utf-8" specifies the
+					character encoding of the file.
+					*/
+					fileContents = localFileStream.readMultiByte(localFileStream.bytesAvailable, "utf-8");
+					
+					/*
+					All done, close the FileStream object.
+					*/
+					localFileStream.close();
+					
+					/*
+					Set the text of the TextArea to the fileContents
+					*/
+					trace(fileContents);
+					message.text = fileContents;
+				}catch(err:Error) {
+					message.text = "Control Group Inc.";
+				}
+			}
+
+			private function doFirstImageTransition():void
+			{	
+				loadFile('file:/Library/WebServer/Documents/cg/CGParty/media/Tripping.txt');
+				
+				trace('[App:doFirstImageTransition]');
+				
+				// drop in the first image
+				imageA.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+				message.text = dataController.incomingDataBuff.getItemAt(0).text;
+				dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+				imageA.isCurrent = true;
+				
+				imageB.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+				nextMessage = dataController.incomingDataBuff.getItemAt(0).text;
+				dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+				//dataController.incomingDataBuff.removeItemAt(0);
+				
+			}
+			
+			private function doTransitionA():void
+			{
+				if(imageA.isCurrent) {
+					trace('image A is current');
+				} else if(imageB.isCurrent) {
+					trace('image B is current');
+				}
+				
+				// zoom and alpha out current
+				var p1:Parallel = new Parallel();
+				var ap:AnimateProperty = new AnimateProperty();
+				ap.property = 'scaleX';
+				ap.toValue = 2;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'scaleY';
+				ap.toValue = 2;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'alpha';
+				ap.toValue = 0;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				// zoom and alpha in next
+				ap = new AnimateProperty();
+				ap.property = 'scaleX';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'scaleY';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'alpha';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+			
+				p1.addEventListener(EffectEvent.EFFECT_END, cleanupTransitionA, false, 0, true);
+				p1.play();
+			}
+			
+			public function doTransitionB(event:TimerEvent):void
+			{
+				forcedTimer.stop();
+				
+				if(imageA.isCurrent) {
+					trace('image A is current');
+				} else if(imageB.isCurrent) {
+					trace('image B is current');
+				}
+				
+				// zoom and alpha out current
+				var p1:Parallel = new Parallel();
+				var ap:AnimateProperty = new AnimateProperty();
+				ap.property = 'scaleX';
+				ap.toValue = 2;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'scaleY';
+				ap.toValue = 2;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'alpha';
+				ap.toValue = 0;
+				ap.duration = animationDuration/2;
+				if(imageA.isCurrent) {
+					ap.target = imageA;
+				} else if(imageB.isCurrent) {
+					ap.target = imageB;
+				}
+				p1.addChild(ap);
+				
+				// zoom and alpha in next
+				ap = new AnimateProperty();
+				ap.property = 'scaleX';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'scaleY';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+				
+				ap = new AnimateProperty();
+				ap.property = 'alpha';
+				ap.toValue = 1;
+				ap.duration = animationDuration;
+				if(imageA.isCurrent) {
+					ap.target = imageB;
+				} else if(imageB.isCurrent) {
+					ap.target = imageA;
+				}
+				p1.addChild(ap);
+				
+				p1.addEventListener(EffectEvent.EFFECT_END, cleanupTransitionB, false, 0, true);
+				p1.play();
+			}
+			
+			// clean up from transitionA
+			protected function cleanupTransitionA(event:EffectEvent):void
+			{
+				// set the text
+				//loadFile(dataController.incomingDataBuff.getItemAt(0).textFile);
+				message.text = nextMessage;
+				nextMessage = dataController.incomingDataBuff.getItemAt(0).text;
+				
+				var arr:Array;
+				
+				if(imageA.isCurrent) {
+					imageA.isCurrent = false;
+					slides.addElementAt(imageA, 0);
+					imageB.isCurrent = true;
+					if(dataController.incomingDataBuff.length > 1) {
+						arr = (dataController.incomingDataBuff.getItemAt(0).name as String).split('.');
+						// if next thing is video
+						if(arr[arr.length-1] == "mp4" || arr[arr.length-1] == "flv" || arr[arr.length-1] == "m4v") {
+							imageA.setVideo("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							// force a transition
+							forcedTimer = new Timer(4000);
+							forcedTimer.addEventListener(TimerEvent.TIMER, doTransitionB, false, 0, true);
+							forcedTimer.start();
+						} else {
+							imageA.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							mainTimer.start();
+						}
+						trace("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+						dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+					}
+					
+					imageA.scaleX = 0.2;
+					imageA.scaleY = 0.2;
+					
+					imageA.alpha = 0;
+					
+					
+				} else if(imageB.isCurrent) {
+					imageA.isCurrent = true;
+					imageB.isCurrent = false;
+					slides.addElementAt(imageB, 0);
+					if(dataController.incomingDataBuff.length > 1) {
+						arr = (dataController.incomingDataBuff.getItemAt(0).name as String).split('.');
+						// if next thing is video
+						if(arr[arr.length-1] == "mp4" || arr[arr.length-1] == "flv" || arr[arr.length-1] == "m4v") {
+							imageB.setVideo("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							// force a transition
+							forcedTimer = new Timer(4000);
+							forcedTimer.addEventListener(TimerEvent.TIMER, doTransitionB, false, 0, true);
+							forcedTimer.start();
+						} else {
+							imageB.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							mainTimer.start();
+						}
+						trace("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+						dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+					}
+					
+					imageB.scaleX = 0.2;
+					imageB.scaleY = 0.2;
+					
+					imageB.alpha = 0;
+				}
+			}
+			
+			// clean up from transitionA
+			protected function cleanupTransitionB(event:EffectEvent):void
+			{
+				// set the text
+				//loadFile(dataController.incomingDataBuff.getItemAt(0).textFile);
+				
+				message.text = nextMessage;
+				nextMessage = dataController.incomingDataBuff.getItemAt(0).text;
+				
+				var arr:Array;
+				
+				if(imageA.isCurrent) {
+					imageA.isCurrent = false;
+					slides.addElementAt(imageA, 0);
+					imageB.isCurrent = true;
+					if(dataController.incomingDataBuff.length > 1) {
+						arr = (dataController.incomingDataBuff.getItemAt(0).name as String).split('.');
+						// if next thing is video
+						if(arr[arr.length-1] == "mp4" || arr[arr.length-1] == "flv" || arr[arr.length-1] == "m4v") {
+							imageA.setVideo("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							// force a transition
+							//forcedTimer = new Timer(4000);
+							//forcedTimer.addEventListener(TimerEvent.TIMER, doTransitionB, false, 0, true);
+							//forcedTimer.start();
+						} else {
+							imageA.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							//mainTimer.start();
+						}
+						trace("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+						dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+					}
+					
+					imageA.scaleX = 0.2;
+					imageA.scaleY = 0.2;
+					
+					imageA.alpha = 0;
+					
+					
+				} else if(imageB.isCurrent) {
+					imageA.isCurrent = true;
+					imageB.isCurrent = false;
+					slides.addElementAt(imageB, 0);
+					if(dataController.incomingDataBuff.length > 1) {
+						arr = (dataController.incomingDataBuff.getItemAt(0).name as String).split('.');
+						// if next thing is video
+						if(arr[arr.length-1] == "mp4" || arr[arr.length-1] == "flv" || arr[arr.length-1] == "m4v") {
+							imageB.setVideo("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							// force a transition
+							//forcedTimer = new Timer(4000);
+							//forcedTimer.addEventListener(TimerEvent.TIMER, doTransitionB, false, 0, true);
+							//forcedTimer.start();
+						} else {
+							imageB.setImage("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+							//mainTimer.start();
+						}
+						trace("media/"+dataController.incomingDataBuff.getItemAt(0).name);
+						dataController.backupDataBuff.addItem(dataController.incomingDataBuff.removeItemAt(0));
+					}
+					
+					imageB.scaleX = 0.2;
+					imageB.scaleY = 0.2;
+					
+					imageB.alpha = 0;
+				}
+			}
+			
+			protected function enterFrameHandler(event:Event):void
+			{
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Image id="background"
+			 source="assets/images/floor.png"
+			 width="100%"
+			 height="100%"
+			 scaleMode="zoom"/>
+	
+	<s:Group id="slides"
+			 width="100%" height="100%"
+			 clipAndEnableScrolling="true"
+			 verticalCenter="0"
+			 horizontalCenter="0">
+		<local:ImagePlate id="imageB"
+						  verticalCenter="0"
+						  horizontalCenter="0"
+						  alpha="0"
+						  scaleX="0.2"
+						  scaleY="0.2"
+						  />
+		
+		<local:ImagePlate id="imageA"
+						  verticalCenter="0"
+						  horizontalCenter="0"
+						  alpha="1"
+						  scaleX="1"
+						  scaleY="1"
+						  />
+	</s:Group>	
+	
+	<mx:Text id="message"
+			 text=""
+			 fontSize="50"
+			 horizontalCenter="0"
+			 bottom="10"
+			 color="#FFFFFF"
+			 fontFamily="Verlag"
+			 fontWeight="bold"
+			 alpha="0.9"
+			 />
+		
+		
+	
+	<s:Image id="cg_logo"
+			 source="assets/images/CG_Circle.png"
+			 scaleX="0.5"
+			 scaleY="0.5"
+			 alpha="0"
+			 bottom="10"
+			 left="10"/>
+	
+</s:WindowedApplication>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.effects.AnimateProperty;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var imageSrc:String = "assets/images/CG_Circle.png";
+			[Bindable]
+			public var videoSrc:String;
+			public var isCurrent:Boolean = false;
+			
+			public var scaleType:String = "scaleDownToFit";
+			
+			protected function creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			private function onImageComplete(event:Event):void
+			{
+				//trace('image complete');
+				(event.target as Image).smoothBitmapContent = true;
+				
+				// do we need to scale?
+				
+				try {
+					if(scaleType == "scaleDownToFit") {
+						if(image.contentWidth > this.parentApplication.stage.width || image.contentHeight > this.parentApplication.stage.height)
+							scaleDownToFit(event);
+						else scaleOneToOne(event);
+					}
+				} catch(e:Error) {
+					trace('[ImagePlate:onImageComplete] ERROR: '+e.message);
+				}
+			}
+			
+			private function scaleOneToOne(event:Event):void
+			{
+				image.width = image.contentWidth;
+				image.height = image.contentHeight;
+			}
+			
+			private function scaleDownToFit(event:Event):void
+			{
+				try {
+					var imageRatio:Number = (image.contentWidth / image.contentHeight);
+					var screenRatio:Number = (this.parentApplication.stage.width / this.parentApplication.stage.height);
+					
+					if(imageRatio > screenRatio) {
+						image.width = this.parentApplication.stage.width;
+						image.height = imageRatio / image.width;
+					}else if(imageRatio <= screenRatio) {
+						image.height = this.parentApplication.stage.height;
+						image.width = imageRatio * image.height;
+					}
+				} catch(e:Error) {
+					trace('[ImagePlate:onImageComplete] ERROR: '+e.message);
+				}
+			}
+			
+			private function onVideoComplete(event:Event):void
+			{
+				videoSrc = null;
+				video.alpha = 0;
+				image.alpha = 1;
+				//this.parentApplication.doTransitionA(new TimerEvent(TimerEvent.TIMER));
+				this.parentApplication.mainTimer.start();
+			}
+			
+			public function setVideo(str:String):void
+			{
+				trace('video is set');
+				videoSrc = str;
+				video.alpha = 1;
+				image.alpha = 0;
+			}
+			
+			public function setImage(str:String):void
+			{
+				imageSrc = str;
+				video.alpha = 0;
+				image.alpha = 1;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<mx:Image id="image"
+			 source="{imageSrc}"
+			 complete="onImageComplete(event)"
+			 cacheAsBitmap="true"
+			 completeEffect="Fade"
+			 scaleContent="true"
+			 maintainAspectRatio="true"
+			 verticalCenter="0"
+			 horizontalCenter="0"
+			 
+			 />
+	
+	<s:VideoDisplay id="video"
+					source="{videoSrc}"
+					scaleMode="letterbox"
+					width="100%"
+					height="100%"
+					alpha="0"
+					autoPlay="true"
+					complete="onVideoComplete(event)"
+					/>
+</s:Group>
